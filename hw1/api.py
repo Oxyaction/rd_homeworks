@@ -1,10 +1,5 @@
-import json
 import requests
 from config import Config
-
-# def read_config():
-#   with file.
-
 
 class Api:
   __token: str
@@ -27,11 +22,11 @@ class Api:
     self.__token = result.json()['access_token']
     
 
-  def get_data(self):
+  def get_data(self, request_date):
     result = requests.get(
       f'{self.__config.get_url()}/out_of_stock',
-      json={'date': '2021-12-01'}, 
+      json={'date': request_date}, 
       headers={'Content-Type': 'application/json', 'Authorization': f'JWT {self.__token}'}
     )
 
-    return result.json()
+    return result.text

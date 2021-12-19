@@ -14,3 +14,6 @@ class Config:
   def get_password(self) -> str:
     return os.environ['API_PASSWORD']
 
+  def get_save_dir(self) -> str:
+    return self.__config['save_dir']
+

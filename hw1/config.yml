@@ -1,3 +1,4 @@
 url: https://robot-dreams-de-api.herokuapp.com
+save_dir: tmp
 authentication:
   username: rd_dreams

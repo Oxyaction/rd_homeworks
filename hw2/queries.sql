@@ -28,7 +28,15 @@ order by
 limit 10;
 
 -- 3. вывести категорию фильмов, на которую потратили больше всего денег.
--- TODO // no budget column found
+select category.name, sum(p.amount) as film_total from film f
+inner join film_category on f.film_id = film_category.film_id
+inner join category on film_category.category_id = category.category_id
+inner join inventory i on f.film_id = i.film_id
+inner join rental r on i.inventory_id = r.inventory_id
+inner join payment p on r.rental_id = p.rental_id
+group by category.category_id
+order by film_total desc
+limit 1;
 
 -- 4. вывести названия фильмов, которых нет в inventory.
 -- Написать запрос без использования оператора IN.

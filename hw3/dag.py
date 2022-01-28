@@ -3,6 +3,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python_operator import PythonOperator
+from dump_operator import DumpOperator
 from products import get_products
 
 
@@ -29,4 +30,11 @@ t1 = PythonOperator(
     dag=dag
 )
 
-t1
+t2 = DumpOperator(
+    task_id='dump-db',
+    postgres_conn_id='postgres_dshop',
+    bash_command='echo hello world',
+    dag=dag
+)
+
+t1 >> t2

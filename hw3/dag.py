@@ -33,7 +33,7 @@ t1 = PythonOperator(
 t2 = DumpOperator(
     task_id='dump-db',
     postgres_conn_id='postgres_dshop',
-    bash_command='echo hello world',
+    bash_command='echo dumping db',
     dag=dag
 )
 

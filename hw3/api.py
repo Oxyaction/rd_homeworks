@@ -1,18 +1,19 @@
+import os
 import requests, sys
 from requests import RequestException
-from config import Config
 
 class Api:
   __token: str
+  __pasword: str
 
-  def __init__(self, config: Config):
-      self.__config = config
+  def __init__(self, password) -> None:
+      self.__pasword = password
 
   def set_access_token(self):
     try:
       result = requests.post(
-        f'{self.__config.get_url()}/auth',
-        json={'username': self.__config.get_username(), 'password': self.__config.get_password()}, 
+        'https://robot-dreams-de-api.herokuapp.com/auth',
+        json={'username': 'rd_dreams', 'password': self.__pasword}, 
         headers={'Content-Type': 'application/json'}
       )
 
@@ -30,7 +31,7 @@ class Api:
   def get_data(self, request_date):
     try:
       result = requests.get(
-        f'{self.__config.get_url()}/out_of_stock',
+        'https://robot-dreams-de-api.herokuapp.com/out_of_stock',
         json={'date': request_date}, 
         headers={'Content-Type': 'application/json', 'Authorization': f'JWT {self.__token}'}
       )

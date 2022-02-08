@@ -3,7 +3,6 @@ from api import Api
 from file_data_manager import save_data
 
 def get_products(**kwargs):
-  print(kwargs)
   request_date = '2021-12-01'
   api = Api(kwargs['api_password'])
 

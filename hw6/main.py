@@ -5,6 +5,9 @@ from hdfs import InsecureClient
 import os
 from pyspark.sql.types import StructType
 import pyspark.sql.functions as F
+from datetime import datetime
+from dateutil.parser import parse
+
 
 
 pg_url = 'jdbc:postgresql://postgres:5432/pagila'
@@ -61,6 +64,7 @@ def spark_read_file(file):
   return read_files[file]
 
 
+# вывести количество фильмов в каждой категории, отсортировать по убыванию.
 def films_count_per_category():
   category_df = spark_read_file('category')
   film_category_df = spark_read_file('film_category')
@@ -73,6 +77,7 @@ def films_count_per_category():
 
   res.show()
 
+# вывести 10 актеров, чьи фильмы большего всего арендовали, отсортировать по убыванию
 def ten_most_rented_actors():
   actor = spark_read_file('actor')
   film_actor = spark_read_file('film_actor')
@@ -159,15 +164,75 @@ def top_3_children_actors():
 
   res.show()
 
-
-# 6. вывести города с количеством активных и неактивных клиентов (активный — customer.active = 1). Отсортировать по количеству неактивных клиентов по убыванию.
+# 6. вывести города с количеством активных и неактивных клиентов (активный — customer.active = 1).
+#  Отсортировать по количеству неактивных клиентов по убыванию.
 def cities_active_inactive_clients():
-  pass
-  
-# 7. вывести категорию фильмов, у которой самое большое кол-во часов суммарной аренды в городах (customer.address_id в этом city), и которые начинаются на букву “a”. То же самое сделать для городов в которых есть символ “-”. Написать все в одном запросе.
-def category_most_rent():
-  pass
+  customer = spark_read_file('customer')
+  address = spark_read_file('address')
+  city = spark_read_file('city')
 
+  inactive = customer\
+    .where(customer.active == '0')\
+    .join(address, 'address_id')\
+    .join(city, 'city_id')\
+    .groupBy(city.city_id)\
+    .agg(F.count('customer_id').alias('inactive'))\
+    .sort('inactive', ascending=False)
+
+
+  # inactive.show()
+  active = customer\
+    .where(customer.active == '1')\
+    .join(address, 'address_id')\
+    .join(city, 'city_id')\
+    .groupBy(city.city_id)\
+    .agg(F.count('customer_id').alias('active'))\
+    .sort('active', ascending=False)
+
+  res = city\
+    .join(inactive, 'city_id', 'left')\
+    .join(active, 'city_id', 'left')\
+    .na.fill(value=0,subset=["inactive", 'active'])\
+    .sort('inactive', 'active', ascending=False)
+  
+  res.show()
+  
+# 7. вывести категорию фильмов, у которой самое большое кол-во часов суммарной аренды в городах (customer.address_id в этом city),
+#  и которые начинаются на букву “a”. То же самое сделать для городов в которых есть символ “-”. Написать все в одном запросе.
+def category_most_rent():
+  category = spark_read_file('category')
+  film_category = spark_read_file('film_category')
+  inventory = spark_read_file('inventory')
+  rental = spark_read_file('rental')
+  customer = spark_read_file('customer')
+  address = spark_read_file('address')
+  city = spark_read_file('city')
+
+  res = category\
+    .join(film_category, 'category_id')\
+    .join(inventory, 'film_id')\
+    .join(rental, 'inventory_id')\
+    .join(customer, 'customer_id')\
+    .join(address, 'address_id')\
+    .join(city, 'city_id')\
+    .where(rental.rental_date.isNotNull() & rental.return_date.isNotNull())\
+    .where(city.city.like('a%') | city.city.like('%-%'))\
+    .select(category.name, rental.rental_date, rental.return_date)\
+  
+  # calculate rental time
+  rdd = res.rdd.map(mapRentalTime)
+  res = rdd.toDF(["name","rental_time"])
+
+  res = res\
+    .groupBy('name')\
+    .agg(F.sum(res.rental_time).alias('rental_time'))\
+    .sort('rental_time', ascending=False)\
+    .limit(1)
+  
+  res.show()
+
+def mapRentalTime(row):
+  return (row.name, (parse(row.return_date) - parse(row.rental_date)).total_seconds())
 
 def dump_tables():
   hdfs_url = 'http://hadoop-namenode:5070/'
@@ -193,11 +258,12 @@ def dump_tables():
 
 
 def main():
-  # films_count_per_category()
-  # ten_most_rented_actors()
-  # most_expensive_category()
-  # not_inventorized_films()
+  films_count_per_category()
+  ten_most_rented_actors()
+  most_expensive_category()
+  not_inventorized_films()
   top_3_children_actors()
-
+  cities_active_inactive_clients()
+  category_most_rent()
 
 main()
